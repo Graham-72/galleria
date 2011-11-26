@@ -396,7 +396,7 @@ function galleria_field_formatter_settings_summary($field, $instance, $view_mode
         $referenced_fields[] = node_type_get_name($node_type) . ': ' . implode(', ', $fields);
       }
     }
-    $referenced_fields = empty($referenced_fields) ? t('None') : implode('; ', $referenced_fields);
+    $referenced_fields = empty($referenced_fields) ? t('All') : implode('; ', $referenced_fields);
     $summary[] = t('Referenced image fields: %fields', array('%fields' => $referenced_fields));
   }
 
@@ -432,7 +432,12 @@ function galleria_field_formatter_view($entity_type, $entity, $field, $instance,
     $items = galleria_prepare_media_images($items);
   }
   elseif ($field['type'] == 'node_reference') {
+    // Cleanup referenced_fields array
     $referenced_fields = &$display['settings']['referenced_fields'];
+    foreach ($referenced_fields as &$field) {
+      $field = array_filter($field);
+    }
+    $referenced_fields = array_filter($referenced_fields);
 
     // Collect items
     $images = array();
@@ -441,7 +446,7 @@ function galleria_field_formatter_view($entity_type, $entity, $field, $instance,
       foreach (field_info_instances('node', $node->type) as $field_name => $field_instance) {
         $field_info = field_info_field($field_name);
         if ($field_info['type'] == 'image' || $field_info['type'] == 'media') {
-          if (!empty($referenced_fields[$node->type][$field_name])) {
+          if (empty($referenced_fields) || !empty($referenced_fields[$node->type][$field_name])) {
             $lang = field_language('node', $node, $field_name, $langcode);
             $node_items = $node->{$field_name}[$lang];
 
