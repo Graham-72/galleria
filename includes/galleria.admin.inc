@@ -432,7 +432,16 @@ function galleria_option_elements() {
  */
 function galleria_option_element($option, $value) {
   $elements = galleria_option_elements();
-  $element = isset($elements[$option]) ? $elements[$option] : array('#type' => 'textfield');
+
+  if (isset($elements[$option])) {
+    $element = $elements[$option];
+  }
+  else {
+    $element = array(
+      '#type' => 'textfield',
+      '#description' => t('Automatic type conversion: Use the special strings "TRUE" or "FALSE" to specify boolean values. Numeric values are passed to Galleria as float, everything else as string.'),
+    );
+  }
 
   if ($value !== NULL) {
     if ($element['#type'] == 'select') {

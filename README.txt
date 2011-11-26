@@ -93,6 +93,9 @@ The main concept of configuring how your Gallerias look like are so called "opti
 For each gallery, you can assign one of these option sets which determine the size, theme, image styles and
 overall Galleria options.
 For a documentation of available options, see http://galleria.aino.se/docs/1.2/options/.
+All officially documented options are available from the select list, but you can also type in custom options (for
+example for theme specific options) using the input field next to the drop-down list.
+If you need these special values to be of type Boolean, use the special strings 'TRUE' and 'FALSE'.
 You have to at least specify a height and width if you do not plan to set these values in one of your CSS files.
 
 
