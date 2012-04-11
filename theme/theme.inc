@@ -16,8 +16,8 @@ function template_preprocess_galleria_container(&$vars) {
   $vars['id'] = ++$galleria_id;
 
   // Load the used option set
-  if (!empty($vars['settings']['galleria_optionset'])) {
-    $optionset = galleria_optionset_load($vars['settings']['galleria_optionset']);
+  if (!empty($vars['settings']['optionset'])) {
+    $optionset = galleria_optionset_load($vars['settings']['optionset']);
   }
   if (empty($optionset)) {
     // Fall back to 'default' option set
