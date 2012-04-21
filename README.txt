@@ -127,6 +127,10 @@ Q: I found a bug / have a feature request / need support! What do I do?
 A: That's what the issue tracker is for! Just create a new issue at http://drupal.org/project/issues/galleria?version=7.x
    and tell us what you need.
 
+Q: How can I upload multiple images at once?
+A: There's a module for that!
+   The Multiupload Imagefield Widget can be found at http://drupal.org/project/multiupload_imagefield_widget.
+
 
 6. Missing Features from Drupal 6
 ---------------------------------
