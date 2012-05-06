@@ -152,6 +152,7 @@ function galleria_optionsets() {
   $optionsets = db_query("SELECT * FROM {galleria_optionset}")->fetchAllAssoc('name', PDO::FETCH_ASSOC);
   foreach ($optionsets as &$optionset) {
     $optionset['options'] = empty($optionset['options']) ? array() : unserialize($optionset['options']);
+    $optionset['plugins'] = empty($optionset['plugins']) ? array() : unserialize($optionset['plugins']);
   }
   return $optionsets;
 }
@@ -163,6 +164,7 @@ function galleria_optionset_load($optionset_name) {
   $optionset = db_query("SELECT * FROM {galleria_optionset} WHERE name = :name", array(':name' => $optionset_name))->fetchAssoc();
   if ($optionset !== FALSE) {
     $optionset['options'] = empty($optionset['options']) ? array() : unserialize($optionset['options']);
+    $optionset['plugins'] = empty($optionset['plugins']) ? array() : unserialize($optionset['plugins']);
   }
   return $optionset;
 }
@@ -234,7 +236,7 @@ function galleria_get_library_file() {
 
 /**
  * Searches for available themes inside the Galleria folder.
- * The list of themes
+ * The list of themes is cached for performance reasons.
  */
 function galleria_get_themes($nocache = FALSE) {
   if (!$nocache && (($themes = cache_get('galleria_themes')) !== FALSE))
@@ -276,6 +278,53 @@ function galleria_get_themes($nocache = FALSE) {
 function galleria_get_theme_file($theme) {
   $themes = galleria_get_themes();
   return isset($themes[$theme]) ? $themes[$theme] : FALSE;
+}
+
+
+/**
+ * Searches for available plugins inside the Galleria folder.
+ * The list of plugins is cached for performance reasons.
+ */
+function galleria_get_plugins($nocache = FALSE) {
+  if (!$nocache && (($plugins = cache_get('galleria_plugins')) !== FALSE))
+    return $plugins->data;
+
+  $plugins = array();
+
+  // Search for theme folders
+  $path = libraries_get_path('galleria') . '/plugins/';
+
+  if (is_dir($path) && (($path_handle = opendir($path)) !== FALSE)) {
+    while (($plugin = readdir($path_handle)) !== FALSE) {
+
+      if (!is_dir($path . $plugin) || $plugin[0] == '.')
+        continue;
+
+      // Search for the theme JavaScript file, minified version first
+      $js = glob($path . $plugin . '/*.min.js');
+      if (count($js) == 0)
+        $js = glob($path . $plugin . '/*.js');
+
+      // Sort by filename to (hopefully) get the newest version.
+      if (count($js) > 0) {
+        rsort($js);
+        $plugins[$plugin] = $js[0];
+      }
+    }
+    closedir($path_handle);
+
+    cache_set('galleria_plugins', $plugins);
+  }
+
+  return $plugins;
+}
+
+/**
+ * Returns the JavaScript file of the given plugin, or FALSE if it could not be found.
+ */
+function galleria_get_plugin_file($plugin) {
+  $plugins = galleria_get_plugins();
+  return isset($plugins[$plugin]) ? $plugins[$plugin] : FALSE;
 }
 
 
@@ -641,6 +690,18 @@ function galleria_add_js($id, $optionset) {
       $theme_file = galleria_get_theme_file('classic');
     }
     $cache['theme'] = $theme_file;
+  }
+
+  // Plugins
+  $plugins = empty($optionset['plugins']) ? array() : $optionset['plugins'];
+  foreach ($plugins as $plugin) {
+    if (empty($cache['plugins'][$plugin])) {
+      $plugin_file = galleria_get_plugin_file($plugin);
+      if ($plugin_file !== FALSE) {
+        $cache['plugins'][$plugin] = $plugin_file;
+        drupal_add_js($plugin_file);
+      }
+    }
   }
 
   // JavaScript settings
