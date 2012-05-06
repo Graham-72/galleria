@@ -3,6 +3,7 @@ description = Turns image fields of nodes into Galleria galleries with this Java
 core = 7.x
 configure = admin/config/media/galleria
 
+dependencies[] = ctools
 dependencies[] = image
 dependencies[] = libraries
 

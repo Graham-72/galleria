@@ -12,6 +12,17 @@ function galleria_schema() {
   return array(
     'galleria_optionset' => array(
       'description' => 'Store option sets for Galleria instances.',
+      'export' => array(
+        'key' => 'name',
+        'identifier' => 'preset',
+        'default hook' => 'galleria_default_presets',
+        'api' => array(
+          'owner' => 'galleria',
+          'api' => 'galleria_default_preset',
+          'minimum_version' => 1,
+          'current_version' => 1,
+        ),
+      ),
       'fields' => array(
         'name' => array(
           'description' => 'The machine-readable option set name.',
@@ -222,21 +233,4 @@ function galleria_update_7003() {
     db_add_field('galleria_optionset', $field, $spec);
   }
   return t('You may now select plugins to be loaded with each Galleria instance.');
-}
-
-
-/**
- * Implements hook_install().
- * Adds a 'default' option set for fresh installs.
- */
-function galleria_install() {
-  $optionset = array(
-    'name' => 'default',
-    'title' => 'Default',
-    'options' => array(
-      'height' => 300,
-      'width' => 450,
-    ),
-  );
-  galleria_optionset_save($optionset, TRUE);
 }

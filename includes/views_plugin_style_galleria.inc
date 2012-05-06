@@ -35,8 +35,8 @@ class views_plugin_style_galleria extends views_plugin_style {
     );
 
     $optionsets = array();
-    foreach (galleria_optionsets() as $name => $optionset) {
-      $optionsets[$name] = check_plain($optionset['title']);
+    foreach (galleria_optionsets_load_all() as $name => $optionset) {
+      $optionsets[$name] = check_plain($optionset->title);
     }
     $form['galleria']['galleria_optionset'] = array(
       '#title' => t('Option set'),

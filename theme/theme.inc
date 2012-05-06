@@ -30,7 +30,7 @@ function template_preprocess_galleria_container(&$vars) {
   // Prepare image elements
   $items = $vars['items'];
   $vars['items'] = array();
-  $thumb_style = empty($optionset['imagestyle_thumb']) ? 'galleria_thumb' : $optionset['imagestyle_thumb'];
+  $thumb_style = empty($optionset->imagestyle_thumb) ? 'galleria_thumb' : $optionset->imagestyle_thumb;
   foreach ($items as $delta => $item) {
     // Stop errors for empty URI. See issue [#1319268] for details.
     if (empty($item['uri'])) {
@@ -38,19 +38,19 @@ function template_preprocess_galleria_container(&$vars) {
     }
 
     // Get URL for "normal" image
-    if (empty($optionset['imagestyle_normal'])) {
+    if (empty($optionset->imagestyle_normal)) {
        $normal_url = file_create_url($item['uri']);
     }
     else {
-       $normal_url = image_style_url($optionset['imagestyle_normal'], $item['uri']);
+       $normal_url = image_style_url($optionset->imagestyle_normal, $item['uri']);
     }
 
     // Get URL for "big" image (for lightbox and fullscreen)
-    if (empty($optionset['imagestyle_big'])) {
+    if (empty($optionset->imagestyle_big)) {
       $big_url = file_create_url($item['uri']);
     }
-    elseif ($optionset['imagestyle_big'] != $optionset['imagestyle_normal']) {
-      $big_url = image_style_url($optionset['imagestyle_big'], $item['uri']);
+    elseif ($optionset->imagestyle_big != $optionset->imagestyle_normal) {
+      $big_url = image_style_url($optionset->imagestyle_big, $item['uri']);
     }
 
     if (!empty($big_url)) {

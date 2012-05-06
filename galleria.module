@@ -5,6 +5,17 @@
  */
 
 /**
+ * Implements hook_permission().
+ */
+function galleria_permission(){
+  return array(
+    'administer galleria' => array(
+      'title' => t('Administer the Galleria module'),
+    ),
+  );
+}
+
+/**
  * Implements hook_menu().
  */
 function galleria_menu() {
@@ -14,7 +25,7 @@ function galleria_menu() {
     'title' => 'Galleria',
     'description' => 'Configure Galleria image galleries.',
     'page callback' => 'galleria_page_optionset_list',
-    'access arguments' => array('administer site configuration'),
+    'access arguments' => array('administer galleria'),
     'file' => 'includes/galleria.admin.inc',
   );
   $items['admin/config/media/galleria/list'] = array(
@@ -28,7 +39,7 @@ function galleria_menu() {
     'description' => 'Add a new Galleria option set.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('galleria_form_optionset_add'),
-    'access arguments' => array('administer site configuration'),
+    'access arguments' => array('administer galleria'),
     'type' => MENU_LOCAL_ACTION,
     'weight' => 1,
     'file' => 'includes/galleria.admin.inc',
@@ -38,7 +49,7 @@ function galleria_menu() {
     'description' => 'Configure an option set.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('galleria_form_optionset_edit', 5),
-    'access arguments' => array('administer site configuration'),
+    'access arguments' => array('administer galleria'),
     'file' => 'includes/galleria.admin.inc',
   );
   $items['admin/config/media/galleria/delete/%galleria_optionset'] = array(
@@ -46,7 +57,7 @@ function galleria_menu() {
     'description' => 'Delete an option set.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('galleria_optionset_form_delete', 5),
-    'access arguments' => array('administer site configuration'),
+    'access arguments' => array('administer galleria'),
     'file' => 'includes/galleria.admin.inc',
   );
   $items['admin/config/media/galleria/advanced'] = array(
@@ -54,9 +65,27 @@ function galleria_menu() {
     'description' => 'Configure the advanced Galleria module settings.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('galleria_form_settings'),
-    'access arguments' => array('administer site configuration'),
+    'access arguments' => array('administer galleria'),
     'type' => MENU_LOCAL_TASK,
     'weight' => 2,
+    'file' => 'includes/galleria.admin.inc',
+  );
+  $items['admin/config/media/galleria/import'] = array(
+    'title' => 'Import',
+    'description' => 'Import Galleria option sets',
+    'page callback' => 'galleria_form_optionset_import',
+    'access arguments' => array('administer galleria'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 3,
+    'file' => 'includes/galleria.admin.inc',
+  );
+  $items['admin/config/media/galleria/export'] = array(
+    'title' => 'Export',
+    'description' => 'Export Galleria option sets',
+    'page callback' => 'galleria_form_optionset_export',
+    'access arguments' => array('administer galleria'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 4,
     'file' => 'includes/galleria.admin.inc',
   );
 
@@ -133,6 +162,15 @@ function galleria_image_default_styles() {
 }
 
 /**
+ * Implements hook_ctools_plugin_api().
+ */
+function galleria_ctools_plugin_api($owner, $api){
+  if ($owner == 'galleria' && $api == 'galleria_default_preset'){
+    return array('version' => 1);
+  }
+}
+
+/**
  * Implements hook_views_api().
  *
  * This tells drupal that there is Views integration file named
@@ -148,60 +186,25 @@ function galleria_views_api() {
 /**
  * Fetches all option sets from the database and returns them as an associative array.
  */
-function galleria_optionsets() {
-  $optionsets = db_query("SELECT * FROM {galleria_optionset}")->fetchAllAssoc('name', PDO::FETCH_ASSOC);
-  foreach ($optionsets as &$optionset) {
-    $optionset['options'] = empty($optionset['options']) ? array() : unserialize($optionset['options']);
-    $optionset['plugins'] = empty($optionset['plugins']) ? array() : unserialize($optionset['plugins']);
-  }
-  return $optionsets;
+function galleria_optionsets_load_all() {
+  ctools_include('export');
+  return ctools_export_crud_load_all('galleria_optionset');
 }
 
 /**
- * Fetches the given option set and returns it as an associative array or FALSE, if no set could be found.
+ * Fetches the given option set and returns it as an object or NULL, if no set could be found.
  */
 function galleria_optionset_load($optionset_name) {
-  $optionset = db_query("SELECT * FROM {galleria_optionset} WHERE name = :name", array(':name' => $optionset_name))->fetchAssoc();
-  if ($optionset !== FALSE) {
-    $optionset['options'] = empty($optionset['options']) ? array() : unserialize($optionset['options']);
-    $optionset['plugins'] = empty($optionset['plugins']) ? array() : unserialize($optionset['plugins']);
-  }
-  return $optionset;
+  ctools_include('export');
+  return ctools_export_crud_load('galleria_optionset', $optionset_name);
 }
 
 /**
  * Checks whether an option set with the given name already exists.
  */
 function galleria_optionset_exists($optionset_name) {
-  return (galleria_optionset_load($optionset_name) !== FALSE);
-}
-
-/**
- * Saves the given option set to the database.
- * Set the $new flag if this set has not been written before.
- */
-function galleria_optionset_save($optionset, $new = FALSE) {
-  $optionset += array(
-    'title' => $optionset['name'],
-    'options' => array(),
-  );
-
-  if ($new) {
-    drupal_write_record('galleria_optionset', $optionset);
-  }
-  else {
-    drupal_write_record('galleria_optionset', $optionset, 'name');
-  }
-  return $optionset;
-}
-
-/**
- * Deletes the given option set from the database.
- */
-function galleria_optionset_delete($optionset) {
-  db_delete('galleria_optionset')->condition('name', $optionset['name'])->execute();
-  // TODO: update formatters?
-  return TRUE;
+  ctools_include('export');
+  return (ctools_export_crud_load('galleria_optionset', $optionset_name) !== NULL);
 }
 
 
@@ -365,8 +368,8 @@ function galleria_field_formatter_settings_form($field, $instance, $view_mode, $
 
   // Show select box for the option set
   $optionsets = array();
-  foreach (galleria_optionsets() as $name => $optionset) {
-    $optionsets[$name] = check_plain($optionset['title']);
+  foreach (galleria_optionsets_load_all() as $name => $optionset) {
+    $optionsets[$name] = check_plain($optionset->title);
   }
   $form['optionset'] = array(
     '#title' => t('Option set'),
@@ -455,8 +458,8 @@ function galleria_field_formatter_settings_summary($field, $instance, $view_mode
   $optionset = t('Default settings');
   if (!empty($settings['optionset'])) {
     $o = galleria_optionset_load($settings['optionset']);
-    if ($o !== FALSE) {
-      $optionset = $o['title'];
+    if ($o !== NULL) {
+      $optionset = $o->title;
     }
   }
   $summary[] = t('Option set: %optionset', array('%optionset' => $optionset));
@@ -511,7 +514,7 @@ function galleria_field_formatter_settings_summary($field, $instance, $view_mode
  */
 function galleria_field_formatter_prepare_view($entity_type, $entities, $field, $instances, $langcode, &$items, $displays) {
   if ($field['type'] == 'node_reference') {
-    // Collect ids to load. 
+    // Collect ids to load.
     $ids = array();
     foreach ($displays as $id => $display) {
       foreach ($items[$id] as $item) {
@@ -683,7 +686,7 @@ function galleria_add_js($id, $optionset) {
   // Theme
   //   As it's only possible to use one theme per page, use the first one we get for everything.
   if (empty($cache['theme'])) {
-    $theme = (!empty($optionset['theme'])) ? $optionset['theme'] : 'classic';
+    $theme = (!empty($optionset->theme)) ? $optionset->theme : 'classic';
     $theme_file = galleria_get_theme_file($theme);
     if (($theme_file === FALSE) && ($theme !== 'classic')) {
       // Try to fall back to classic theme, the other one might have been deleted.
@@ -693,7 +696,7 @@ function galleria_add_js($id, $optionset) {
   }
 
   // Plugins
-  $plugins = empty($optionset['plugins']) ? array() : $optionset['plugins'];
+  $plugins = empty($optionset->plugins) ? array() : $optionset->plugins;
   foreach ($plugins as $plugin) {
     if (empty($cache['plugins'][$plugin])) {
       $plugin_file = galleria_get_plugin_file($plugin);
@@ -708,10 +711,10 @@ function galleria_add_js($id, $optionset) {
   $js_settings = array(
     'themepath' => file_create_url($cache['theme']),
     'optionsets' => array(
-      $optionset['name'] => $optionset['options'],
+      $optionset->name => $optionset->options,
     ),
     'instances' => array(
-      'galleria-' . $id => $optionset['name'],
+      'galleria-' . $id => $optionset->name,
     ),
   );
   drupal_add_js(array('galleria' => $js_settings), 'setting');
