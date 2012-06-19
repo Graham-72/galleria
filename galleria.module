@@ -223,7 +223,7 @@ function galleria_get_library_file() {
   // Seach for minimized files first.
   // Sort the found files to use the newest version if there's more than one.
   $js = glob($libpath . '/galleria-*.min.js');
-  if (count($js) == 0)
+  if ($js === FALSE || count($js) == 0)
     $js = glob($libpath . '/galleria-*.js');
 
   if (count($js) > 0) {
@@ -258,7 +258,7 @@ function galleria_get_themes($nocache = FALSE) {
 
       // Search for the theme JavaScript file, minified version first
       $js = glob($path . $theme . '/*.min.js');
-      if (count($js) == 0)
+      if ($js === FALSE || count($js) == 0)
         $js = glob($path . $theme . '/*.js');
 
       // Sort by filename to (hopefully) get the newest version.
@@ -305,7 +305,7 @@ function galleria_get_plugins($nocache = FALSE) {
 
       // Search for the theme JavaScript file, minified version first
       $js = glob($path . $plugin . '/*.min.js');
-      if (count($js) == 0)
+      if ($js === FALSE || count($js) == 0)
         $js = glob($path . $plugin . '/*.js');
 
       // Sort by filename to (hopefully) get the newest version.
